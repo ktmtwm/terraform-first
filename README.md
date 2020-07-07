@@ -1,2 +1,5 @@
 # terraform-first
-terraform practice
+terraform init
+terraform plan
+terraform apply \
+  -var-file="production.tfvars"
