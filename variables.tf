@@ -1,3 +1,8 @@
+variable "name" {
+  description = "The name of the project, must be unique"
+  default     = "Terraform-AdaT"
+}
+
 variable "region" {
   type          = string
   description   = "Region of ECS cluster"
@@ -9,3 +14,4 @@ variable "credentials" {
   description   = "default AWS credential profile"
   default       = "~/.aws/credentials"
 }
+
