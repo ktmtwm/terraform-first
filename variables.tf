@@ -12,6 +12,6 @@ variable "region" {
 variable "credentials" {
   type          = string
   description   = "default AWS credential profile"
-  default       = "~/.aws/credentials"
+  default       = "c:/Users/adat/.aws/credentials"
 }
 
