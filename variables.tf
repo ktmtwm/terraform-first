@@ -15,3 +15,6 @@ variable "credentials" {
   default       = "c:/Users/adat/.aws/credentials"
 }
 
+variable "echo_port" {
+  default = "1025"
+}
