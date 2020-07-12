@@ -84,7 +84,7 @@ resource "local_file" "cloud_pem" {
 
 
 data "template_file" "install-docker" {
-  template = "${file("./docker-scripts/install-docker.sh")}"
+  template = "${file("./docker-scripts/install-docker-ngnix.sh")}"
 }
 
 resource "aws_instance" "web"{
@@ -97,15 +97,13 @@ resource "aws_instance" "web"{
 
   key_name      = "${aws_key_pair.generated_key.key_name}"
 
-  # key_name               = "${file(\"${var.keyname}\"")}"
-
   connection {
     user = "ubuntu"
     type = "ssh"
     private_key = file("${var.pemfile}")
     host = "${aws_instance.web.public_ip}"
   }
-  
+
   user_data               = "${data.template_file.install-docker.template}"
 
   # # run a remote provisioner on the instance after creating it.
