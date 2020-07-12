@@ -113,12 +113,6 @@ resource "aws_instance" "web"{
 
   user_data               = "${data.template_file.install-docker.template}"
 
-  # provisioner "remote-exec" {
-  #    inline = [
-  #         "python3 /tmp/calculate_works.py"
-  #     ]
-  # } 
-
 }
 
 

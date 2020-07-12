@@ -1,4 +1,9 @@
 # terraform-first
+Parameters:
+	You may need to change variables in variables.tf
+	credentials.default -> to your own local aws credential path
+	pemfile.default -> to your own local key path. project will automate save ssh rsa private key.
+
 Execute with command: 
 	terraform init
 	terraform plan

@@ -37,4 +37,5 @@ python3 /tmp/calculate_words.py | sudo tee -a /tmp/words.html
 
 # Ubuntu firewall setting
 ufw allow https
+# ufw allow from 172.0.0.0/24 to any port 22 proto tcp Rules updated
 ufw enable
