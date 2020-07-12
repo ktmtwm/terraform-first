@@ -15,3 +15,13 @@ variable "credentials" {
   description   = "default AWS credential profile"
   default       = "c:/Users/adat/.aws/credentials"
 }
+
+variable "keyname" {
+  type          = string
+  default       = "adatkey"
+}
+
+variable "pemfile" {
+  type          = string
+  default       = "c:/Users/adat/.aws/sshKeys/adatkey.pem"
+}

@@ -31,14 +31,48 @@ data "aws_ami" "ubuntu" {
 ##
 ## Resources
 ##
- # resource "aws_key_pair" "web" {
- #    key_name = "web-key"
- #    public_key = "${file("ssh/test-key.pub")}"
- # }
+# resource "aws_vpc" "web" {
+#     cidr_block = "10.0.0.0/16"
+# }
+# # Create the Security Group
+# resource "aws_security_group" "My_VPC_Security_Group" {
+#   vpc_id       = aws_vpc.web.id
+#   name         = "My VPC Security Group"
+#   description  = "My VPC Security Group"
+   
+#     # SSH access from anywhere
+#     ingress {
+#         from_port = 22
+#         to_port = 22
+#         protocol = "tcp"
+#         cidr_blocks = ["0.0.0.0/0"]
+#     }
 
-##
-## Modules
-##
+#     # HTTP access from anywhere
+#     ingress {
+#         from_port = 443
+#         to_port = 443
+#         protocol = "tcp"
+#         cidr_blocks = ["0.0.0.0/0"]
+#     }
+
+#     # HTTP access from anywhere
+#     ingress {
+#         from_port = 80
+#         to_port = 80
+#         protocol = "tcp"
+#         cidr_blocks = ["0.0.0.0/0"]
+#     }
+
+#     # outbound internet access
+#     egress {
+#         from_port = 0
+#         to_port = 0
+#         protocol = "-1"
+#         cidr_blocks = ["0.0.0.0/0"]
+#     }
+# }
+
 
 #
 # vpc with private && public subnets
@@ -75,149 +109,58 @@ module "security_group" {
   egress_cidr_blocks       = ["0.0.0.0/0"]
 }
 
-module "my_ec2" {
-  source                 = "terraform-aws-modules/ec2-instance/aws"
-  version                = "~> 2.0"
+resource "tls_private_key" "rsa" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
 
-  name                   = "ada-ec2"
-  instance_count         = 1
+resource "aws_key_pair" "generated_key" {
+  key_name   = "${var.keyname}"
+  public_key = "${tls_private_key.rsa.public_key_openssh}"
+}
 
-  # ami                    = "ami-03d29fac194d41bfa"          #CentOs 7 + nginx
+resource "local_file" "cloud_pem" { 
+  filename = "${var.pemfile}"
+  content = tls_private_key.rsa.private_key_pem
+}
+
+resource "aws_instance" "web"{
   ami                    = "${data.aws_ami.ubuntu.id}"
   instance_type          = "t2.micro"
   monitoring             = true
   vpc_security_group_ids = ["${module.my_vpc.default_security_group_id}","${module.security_group.this_security_group_id}"]
   subnet_id              = "${module.my_vpc.public_subnets[0]}"
+  associate_public_ip_address = true
 
-    user_data = <<-EOF
-              #!/bin/bash
-              echo "Hello, World" > index.html
-              nohup busybox httpd -f -p 8080 &
-              EOF
-# connection {
-#         user = "ec2-user"
-#         private_key = "${file("ssh/test-key")}"
-#         host = "${module.my_ec2.public_ip}"
-#     }
+  key_name      = "${aws_key_pair.generated_key.key_name}"
 
-# provisioner "file" {
-#         source = "./html/index.html"
-#         destination = "/tmp/index.html"
-#  }
+  # key_name               = "${file(\"${var.keyname}\"")}"
 
-# provisioner "remote-exec" {
-#     inline = [
-
-#               "sudo yum install httpd -y",
-#               "sudo cp /tmp/index.html /var/www/html/index.html"    
-#               ]
-#   }
-
-# provisioner "remote-exec" {
-#     scripts = [
-#                "scripts/web.sh"
-#               ]
-#    }
-
-  tags = {
-    Terraform   = "true"
-    Environment = "dev"
+  connection {
+    user = "${var.key_name}"
+    type = "ssh"
+    private_key = file("${var.pemfile}")
+    host = "${aws_instance.web.public_ip}"
   }
+
+  # provisioner "file" {
+  #   source = "adat-us-east-1.pem"
+  #   destination = "c:/Users/adat/.aws/sshKeys/adat-us-east-1.pem"
+  # }
 }
 
-
-# resource "aws_instance" "web" {
-#   ami           = "${data.aws_ami.ubuntu.id}"
-#   instance_type = "t2.micro"
-#   # vpc_security_group_ids      = ["${data.aws_security_group.selected.id}"]
-#   # subnet_id                   = "${data.aws_subnet.selected.id}"
-
-#   tags = {
-#     Name = "AdaTanInst"
-#   }
-# }
+##
+## Modules
+##
 
 
-# #
-# # Container_definition
-# #
-# module "container_definition" {
-#   source            = "./modules/ecs_container_definition/"
-# }
 
+# module "my_e2"{
+#   source                 = "terraform-aws-modules/ec2-instance/aws"
+#   version                = "~> 2.0"
 
-# #
-# # The ecs_service sub-module creates the ECS Service
-# # 
-# module "ecs_service" {
-#   source = "./modules/ecs_service/"
-#   name = var.name
+#   name                   = "ada-ec2"
+#   instance_count         = 1
 
-#   vpc_id     = "${module.vpc.vpc_id}"
-#   subnet_ids = ["${module.vpc.private_subnets}"]
-
-#   vpc_security_group_ids = [data.aws_security_group.selected.id]
-
-#   # ec2_disk_encryption = "true"
-#   tags = local.tags
-# }
-
-
-# data "aws_vpc" "selected" {
-#   default = true
-# }
-
-# data "aws_availability_zones" "available" {
-# }
-
-# data "aws_subnet" "selected" {
-#   availability_zone = data.aws_availability_zones.available.names[0]
-#   default_for_az    = true
-#   vpc_id            = data.aws_vpc.selected.id
-# }
-
-# data "aws_security_group" "selected" {
-#   name   = "default"
-#   vpc_id = data.aws_vpc.selected.id
-# }
-
-# resource "aws_security_group_rule" "allow_all" {
-#   type              = "ingress"
-#   from_port         = "0"
-#   to_port           = "65535"
-#   protocol          = "tcp"
-#   cidr_blocks       = ["0.0.0.0/0"]
-#   security_group_id = data.aws_security_group.selected.id
-# }
-
-# module "ecs_cluster" {
-#   # source  = "blinkist/airship-ecs-cluster/aws"
-#   # version = "v1.0.0"
-#   source = "github.com/blinkist/terraform-aws-airship-ecs-cluster?ref=v1.0.0" # Terraform registry doesn't have v1.0.0 yet
-
-#   name = "${terraform.workspace}-cluster"
-
-#   vpc_id     = data.aws_vpc.selected.id
-#   subnet_ids = [data.aws_subnet.selected.id]
-
-#   vpc_security_group_ids = [data.aws_security_group.selected.id]
-
-#   cluster_properties = {
-#     # ec2_instance_type defines the instance type
-#     ec2_instance_type = "t2.micro"
-#     ec2_key_name      = ""
-#     # ec2_asg_min defines the minimum size of the autoscaling group
-#     ec2_asg_min = "1"
-#     # ec2_asg_max defines the maximum size of the autoscaling group
-#     ec2_asg_max = "1"
-#     # ec2_disk_size defines the size in GB of the non-root volume of the EC2 Instance
-#     ec2_disk_size = "10"
-#     # ec2_disk_type defines the disktype of that EBS Volume
-#     ec2_disk_type = "gp2"
-#     # block_metadata_service blocks the aws metadata service from the ECS Tasks true / false, this is preferred security wise
-#     block_metadata_service = false
-#   }
-
-#   # ec2_disk_encryption = "true"
-#   tags = local.tags
+#   ami_id                 = "${aws_instance.web.name}"
 # }
