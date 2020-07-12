@@ -18,11 +18,12 @@
 	Outputs:
 		public_ip = xx.xx.xx.xx
 ### View Nginx server with:
-	Home page:
+##### * Home page:
 		http://<public_ip>
-	Resource usage page:	(Realtime refresh)
+##### * Resource usage page:	(Realtime refresh)
 		http://<public_ip>/resource.html
-	Health check page:		(Realtime refresh)
+##### * Health check page:	(Realtime refresh)
 		http://<public_ip>/health.html
-	Nginx root page words calculate:
+##### * Nginx root page words calculate:
 		http://<public_ip>/words.html
+
