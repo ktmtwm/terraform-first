@@ -84,7 +84,7 @@ resource "local_file" "cloud_pem" {
 
 
 data "template_file" "install-docker" {
-  template = "${file("./docker-scripts/install-docker-ngnix.sh")}"
+  template = "${file("./docker-scripts/install-docker-nginx.sh")}"
 }
 
 resource "aws_instance" "web"{
@@ -104,23 +104,20 @@ resource "aws_instance" "web"{
     host = "${aws_instance.web.public_ip}"
   }
 
-  user_data               = "${data.template_file.install-docker.template}"
 
-  # # run a remote provisioner on the instance after creating it.
-  # provisioner "file" {
-  #     source = "./docker-scripts/"
-  #     destination = "/tmp/"
-  # }
+  # run a remote provisioner on the instance after creating it.
+  provisioner "file" {
+      source = "./docker-scripts/"
+      destination = "/tmp/"
+  }
+
+  user_data               = "${data.template_file.install-docker.template}"
 
   # provisioner "remote-exec" {
   #    inline = [
-  #         "chmod +x /tmp/install-docker.sh",
-  #         "/bin/sh /tmp/install-docker.sh",
-  #         # "sh /tmp/download-docker-images.sh", 
-  #         # "sh /tmp/run-axis-server.sh",
-  #         # "sh /tmp/run-esb.sh"
+  #         "python3 /tmp/calculate_works.py"
   #     ]
-  # }
+  # } 
 
 }
 
