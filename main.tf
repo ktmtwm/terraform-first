@@ -17,7 +17,7 @@ data "aws_ami" "ubuntu" {
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-trusty-14.04-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-*"]
   }
 
   filter {
@@ -31,49 +31,6 @@ data "aws_ami" "ubuntu" {
 ##
 ## Resources
 ##
-# resource "aws_vpc" "web" {
-#     cidr_block = "10.0.0.0/16"
-# }
-# # Create the Security Group
-# resource "aws_security_group" "My_VPC_Security_Group" {
-#   vpc_id       = aws_vpc.web.id
-#   name         = "My VPC Security Group"
-#   description  = "My VPC Security Group"
-   
-#     # SSH access from anywhere
-#     ingress {
-#         from_port = 22
-#         to_port = 22
-#         protocol = "tcp"
-#         cidr_blocks = ["0.0.0.0/0"]
-#     }
-
-#     # HTTP access from anywhere
-#     ingress {
-#         from_port = 443
-#         to_port = 443
-#         protocol = "tcp"
-#         cidr_blocks = ["0.0.0.0/0"]
-#     }
-
-#     # HTTP access from anywhere
-#     ingress {
-#         from_port = 80
-#         to_port = 80
-#         protocol = "tcp"
-#         cidr_blocks = ["0.0.0.0/0"]
-#     }
-
-#     # outbound internet access
-#     egress {
-#         from_port = 0
-#         to_port = 0
-#         protocol = "-1"
-#         cidr_blocks = ["0.0.0.0/0"]
-#     }
-# }
-
-
 #
 # vpc with private && public subnets
 #
@@ -91,6 +48,7 @@ module "my_vpc" {
 
   enable_nat_gateway = true
   enable_vpn_gateway = true
+  enable_dns_hostnames = true
 
   tags = {
     Terraform = "true"
@@ -137,17 +95,27 @@ resource "aws_instance" "web"{
   # key_name               = "${file(\"${var.keyname}\"")}"
 
   connection {
-    user = "${var.key_name}"
+    user = "ubuntu"
     type = "ssh"
     private_key = file("${var.pemfile}")
     host = "${aws_instance.web.public_ip}"
   }
 
-  # provisioner "file" {
-  #   source = "adat-us-east-1.pem"
-  #   destination = "c:/Users/adat/.aws/sshKeys/adat-us-east-1.pem"
-  # }
-}
+  # run a remote provisioner on the instance after creating it.
+  provisioner "file" {
+      source = "./docker-scripts/"
+      destination = "/tmp/"
+  }
+
+  provisioner "remote-exec" {
+     inline = [
+          "sudo sh /tmp/install-docker.sh",
+          # "sh /tmp/download-docker-images.sh", 
+          # "sh /tmp/run-axis-server.sh",
+          # "sh /tmp/run-esb.sh"
+      ]
+    }
+  }
 
 ##
 ## Modules
