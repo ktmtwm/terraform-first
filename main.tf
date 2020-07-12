@@ -82,6 +82,11 @@ resource "local_file" "cloud_pem" {
   content = tls_private_key.rsa.private_key_pem
 }
 
+
+data "template_file" "install-docker" {
+  template = "${file("./docker-scripts/install-docker.sh")}"
+}
+
 resource "aws_instance" "web"{
   ami                    = "${data.aws_ami.ubuntu.id}"
   instance_type          = "t2.micro"
@@ -100,35 +105,25 @@ resource "aws_instance" "web"{
     private_key = file("${var.pemfile}")
     host = "${aws_instance.web.public_ip}"
   }
+  
+  user_data               = "${data.template_file.install-docker.template}"
 
-  # run a remote provisioner on the instance after creating it.
-  provisioner "file" {
-      source = "./docker-scripts/"
-      destination = "/tmp/"
-  }
+  # # run a remote provisioner on the instance after creating it.
+  # provisioner "file" {
+  #     source = "./docker-scripts/"
+  #     destination = "/tmp/"
+  # }
 
-  provisioner "remote-exec" {
-     inline = [
-          "sudo sh /tmp/install-docker.sh",
-          # "sh /tmp/download-docker-images.sh", 
-          # "sh /tmp/run-axis-server.sh",
-          # "sh /tmp/run-esb.sh"
-      ]
-    }
-  }
+  # provisioner "remote-exec" {
+  #    inline = [
+  #         "chmod +x /tmp/install-docker.sh",
+  #         "/bin/sh /tmp/install-docker.sh",
+  #         # "sh /tmp/download-docker-images.sh", 
+  #         # "sh /tmp/run-axis-server.sh",
+  #         # "sh /tmp/run-esb.sh"
+  #     ]
+  # }
 
-##
-## Modules
-##
+}
 
 
-
-# module "my_e2"{
-#   source                 = "terraform-aws-modules/ec2-instance/aws"
-#   version                = "~> 2.0"
-
-#   name                   = "ada-ec2"
-#   instance_count         = 1
-
-#   ami_id                 = "${aws_instance.web.name}"
-# }
